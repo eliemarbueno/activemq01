@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:jms="http://www.springframework.org/schema/jms"
+       xsi:schemaLocation="
+        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/jms http://www.springframework.org/schema/jms/spring-jms.xsd">
+
+    <!-- AppConfig bean to hold credentials and broker URL -->
+    <bean id="appConfig" class="br.com.ebueno.config.AppConfig" />
+
+    <!-- ActiveMQ ConnectionFactory configured from AppConfig -->
+    <bean id="connectionFactory" class="org.apache.activemq.ActiveMQConnectionFactory">
+        <constructor-arg value="#{appConfig.brokerUrl}" />
+        <property name="userName" value="#{appConfig.user}" />
+        <property name="password" value="#{appConfig.password}" />
+    </bean>
+
+    <!-- JMS Template -->
+    <bean id="jmsTemplate" class="org.springframework.jms.core.JmsTemplate">
+        <property name="connectionFactory" ref="connectionFactory" />
+    </bean>
+
+    <!-- Producer and Consumer beans -->
+    <bean id="jmsProducer" class="br.com.ebueno.jms.JmsProducer">
+        <property name="jmsTemplate" ref="jmsTemplate" />
+    </bean>
+
+    <bean id="productConsumer" class="br.com.ebueno.jms.JmsConsumer">
+        <constructor-arg index="0" value="product-consumer" />
+    </bean>
+
+    <bean id="categoryConsumer" class="br.com.ebueno.jms.JmsConsumer">
+        <constructor-arg index="0" value="category-consumer" />
+    </bean>
+
+    <!-- Listener containers for each queue -->
+    <bean id="productListenerContainer" class="org.springframework.jms.listener.DefaultMessageListenerContainer">
+        <property name="connectionFactory" ref="connectionFactory" />
+        <property name="destinationName" value="product.queue" />
+        <property name="messageListener" ref="productConsumer" />
+        <property name="concurrentConsumers" value="1" />
+    </bean>
+
+    <bean id="categoryListenerContainer" class="org.springframework.jms.listener.DefaultMessageListenerContainer">
+        <property name="connectionFactory" ref="connectionFactory" />
+        <property name="destinationName" value="category.queue" />
+        <property name="messageListener" ref="categoryConsumer" />
+        <property name="concurrentConsumers" value="1" />
+    </bean>
+
+</beans>
